@@ -1,0 +1,1920 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="一个只会生成错误内容的二维码生成器。仅供娱乐与交互演示。">
+<meta name="author" content="MC CYA2014 &amp; DeepSeek-V4.1-Flash-1017">
+<title>二维码生成器 · 故障模式</title>
+<style>
+  :root{
+    --paper:#f2eee3;
+    --paper-2:#fbf8ef;
+    --ink:#141414;
+    --ink-soft:#222;
+    --red:#e63a1f;
+    --red-ink:#b9270d;
+    --acid:#d8ff3e;
+    --muted:#716c61;
+    --line:rgba(20,20,20,.16);
+    --mono:"Cascadia Mono","SFMono-Regular","Roboto Mono",Consolas,"Liberation Mono",monospace;
+    --sans:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(20,20,20,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,20,20,.045) 1px, transparent 1px);
+    background-size:32px 32px;
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:80;
+    opacity:.38;
+    background:repeating-linear-gradient(0deg, rgba(20,20,20,.025) 0 1px, transparent 1px 3px);
+  }
+  [hidden]{display:none!important}
+  ::selection{background:var(--red);color:#fff}
+  button,textarea{font:inherit}
+  button{cursor:pointer}
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+
+  /* ---------- 顶部走马灯 ---------- */
+  .ticker{
+    position:relative;
+    z-index:6;
+    height:32px;
+    overflow:hidden;
+    background:var(--ink);
+    color:#f7f2e7;
+    border-bottom:2px solid var(--ink);
+  }
+  .ticker-track{
+    display:flex;
+    width:max-content;
+    height:100%;
+    align-items:center;
+    animation:ticker 30s linear infinite;
+    will-change:transform;
+  }
+  .ticker-group{
+    display:flex;
+    align-items:center;
+    flex:none;
+    gap:24px;
+    padding-right:24px;
+  }
+  .ticker span{
+    font:600 10.5px/1 var(--mono);
+    letter-spacing:.16em;
+    white-space:nowrap;
+  }
+  .ticker i{
+    color:var(--red);
+    font:400 13px/1 var(--mono);
+    font-style:normal;
+  }
+  @keyframes ticker{to{transform:translateX(-50%)}}
+
+  .shell{
+    width:min(1280px,100%);
+    margin:0 auto;
+    padding:0 32px 34px;
+    position:relative;
+    z-index:2;
+  }
+
+  /* ---------- 页眉 ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    padding:22px 0 18px;
+    border-bottom:2px solid var(--ink);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    color:inherit;
+    text-decoration:none;
+  }
+  .brand-mark{
+    width:44px;
+    height:44px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    gap:3px;
+    padding:7px;
+    flex:none;
+    background:#fff;
+    border:2px solid var(--ink);
+    box-shadow:3px 3px 0 var(--red);
+  }
+  .brand-mark i{display:block;background:var(--ink)}
+  .brand-mark i:nth-child(2),
+  .brand-mark i:nth-child(4){background:var(--red)}
+  .brand-mark i:nth-child(6),
+  .brand-mark i:nth-child(8){background:transparent}
+  .brand-text{display:flex;flex-direction:column;gap:3px}
+  .brand-text strong{
+    font:800 17px/1 var(--mono);
+    letter-spacing:.08em;
+  }
+  .brand-text small{
+    color:var(--muted);
+    font:9.5px/1 var(--mono);
+    letter-spacing:.16em;
+  }
+  .top-meta{display:flex;align-items:center;gap:14px}
+  .mode-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    height:31px;
+    padding:0 12px;
+    background:var(--acid);
+    border:2px solid var(--ink);
+    box-shadow:2px 2px 0 var(--ink);
+    font:700 10.5px/1 var(--mono);
+    letter-spacing:.06em;
+    white-space:nowrap;
+  }
+  .pulse-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--red);
+    box-shadow:0 0 0 3px rgba(230,58,31,.14);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
+  .ver{font:10px/1 var(--mono);color:var(--muted);letter-spacing:.08em}
+
+  /* ---------- 开场 ---------- */
+  .intro{
+    display:grid;
+    grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
+    gap:64px;
+    align-items:end;
+    padding:44px 0 38px;
+  }
+  .intro-left{position:relative}
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin:0 0 17px;
+    color:var(--muted);
+    font:10px/1 var(--mono);
+    letter-spacing:.18em;
+    text-transform:uppercase;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background:var(--red);
+    flex:none;
+  }
+  h1{
+    margin:0;
+    font-family:var(--serif);
+    font-weight:800;
+    font-size:clamp(48px,6.6vw,92px);
+    line-height:.94;
+    letter-spacing:-.055em;
+  }
+  h1 .fail-word{
+    display:inline-block;
+    color:var(--red);
+    transform:rotate(-1.2deg);
+  }
+  h1 .fail-x{
+    display:inline-block;
+    margin-left:.05em;
+    font-family:var(--sans);
+    font-size:.46em;
+    font-weight:900;
+    vertical-align:.28em;
+    color:var(--ink);
+    transform:rotate(8deg);
+  }
+  .seal{
+    position:absolute;
+    right:6%;
+    top:-2px;
+    width:94px;
+    height:94px;
+    display:grid;
+    place-content:center;
+    gap:1px;
+    text-align:center;
+    border:2px solid var(--red);
+    border-radius:50%;
+    color:var(--red-ink);
+    font:9px/1.25 var(--mono);
+    letter-spacing:.1em;
+    transform:rotate(9deg);
+    opacity:.9;
+  }
+  .seal::before{
+    content:"";
+    position:absolute;
+    inset:5px;
+    border:1px dashed rgba(185,39,13,.55);
+    border-radius:50%;
+  }
+  .seal b{font:800 25px/1 var(--mono);letter-spacing:-.04em}
+  .intro-copy{
+    padding:0 0 5px 20px;
+    border-left:2px solid var(--ink);
+  }
+  .intro-copy > p{
+    margin:0;
+    max-width:43ch;
+    font-size:14px;
+    line-height:1.85;
+    color:#444037;
+  }
+  .intro-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-top:25px;
+  }
+  .intro-stats div{
+    border-top:2px solid var(--ink);
+    padding-top:10px;
+  }
+  .intro-stats b{
+    display:block;
+    font:800 25px/1 var(--mono);
+    letter-spacing:-.06em;
+  }
+  .intro-stats span{
+    display:block;
+    margin-top:5px;
+    color:var(--muted);
+    font:8.5px/1.2 var(--mono);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .credit{
+    margin:16px 0 0;
+    color:var(--muted);
+    font:8.5px/1.5 var(--mono);
+    letter-spacing:.06em;
+    white-space:nowrap;
+  }
+  .credit b{font:inherit;color:var(--red-ink);font-weight:700}
+
+  /* ---------- 工作台 ---------- */
+  .workbench{
+    display:grid;
+    grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);
+    gap:24px;
+    align-items:stretch;
+  }
+  .panel{
+    border:2px solid var(--ink);
+    background:var(--paper-2);
+    box-shadow:8px 8px 0 var(--ink);
+    min-width:0;
+  }
+  .input-panel{display:flex;flex-direction:column}
+  .panel-head{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    padding:17px 22px;
+    border-bottom:2px solid var(--ink);
+    flex:none;
+  }
+  .step{
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    flex:none;
+    background:var(--ink);
+    color:var(--paper);
+    font:700 12px/1 var(--mono);
+  }
+  .panel-head h2{
+    margin:0;
+    font-size:17px;
+    line-height:1.2;
+    letter-spacing:.02em;
+  }
+  .panel-head p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font:8.5px/1.2 var(--mono);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .tag{
+    margin-left:auto;
+    padding:4px 7px;
+    border:1px solid var(--line);
+    color:var(--muted);
+    font:8.5px/1 var(--mono);
+    letter-spacing:.08em;
+  }
+  .input-body{
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    padding:22px;
+  }
+
+  .textarea-wrap{
+    border:2px solid var(--ink);
+    background:#fff;
+    box-shadow:4px 4px 0 rgba(20,20,20,.12);
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  .textarea-wrap:focus-within{
+    border-color:var(--red);
+    box-shadow:4px 4px 0 rgba(230,58,31,.22);
+  }
+  textarea{
+    display:block;
+    width:100%;
+    min-height:164px;
+    padding:17px 18px;
+    border:0;
+    outline:0;
+    resize:vertical;
+    background:transparent;
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.7;
+  }
+  textarea::placeholder{color:#a19a8c}
+  .ta-foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 13px;
+    border-top:1px solid var(--line);
+    color:var(--muted);
+    font:9px/1.3 var(--mono);
+    letter-spacing:.02em;
+  }
+  .ta-note{text-align:right;color:#9a9385}
+  .char-count.is-over{color:var(--red-ink);font-weight:700}
+
+  .settings{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+    margin-top:16px;
+  }
+  .setting{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.38);
+    min-width:0;
+  }
+  .setting-wide{grid-column:1/-1}
+  .setting-label{
+    color:var(--muted);
+    font:9px/1.2 var(--mono);
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .fake-select{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding-bottom:2px;
+    border-bottom:1px dashed #aaa294;
+    color:#3e3a32;
+    font:700 10.5px/1.2 var(--mono);
+    cursor:not-allowed;
+    user-select:none;
+    white-space:nowrap;
+  }
+  .fake-select i{font-style:normal;color:var(--red);font-size:11px}
+  .meter{
+    position:relative;
+    flex:1;
+    height:8px;
+    margin:0 3px 0 12px;
+    overflow:hidden;
+    background:#ded7c8;
+  }
+  .meter span{
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(135deg,var(--red) 0 6px,#bf2b12 6px 12px);
+  }
+  .meter-val{color:var(--red-ink);font:800 10.5px/1 var(--mono)}
+
+  .generate-btn{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    min-height:70px;
+    margin-top:18px;
+    padding:0 19px;
+    border:2px solid var(--ink);
+    background:var(--red);
+    color:#fff;
+    box-shadow:5px 5px 0 var(--ink);
+    text-align:left;
+    transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+  }
+  .generate-btn:hover{
+    background:#f1492c;
+    transform:translate(-2px,-2px);
+    box-shadow:7px 7px 0 var(--ink);
+  }
+  .generate-btn:active{
+    transform:translate(3px,3px);
+    box-shadow:2px 2px 0 var(--ink);
+  }
+  .generate-btn:focus-visible{
+    outline:3px solid var(--acid);
+    outline-offset:3px;
+  }
+  .generate-btn:disabled{
+    cursor:wait;
+    opacity:.8;
+    transform:none;
+    box-shadow:5px 5px 0 var(--ink);
+  }
+  .btn-copy{display:flex;flex-direction:column;gap:4px}
+  .btn-main{font-size:20px;font-weight:800;letter-spacing:.02em;line-height:1}
+  .btn-sub{font:8.5px/1 var(--mono);letter-spacing:.14em;opacity:.78}
+  .btn-arrow{
+    margin-left:auto;
+    font:300 30px/1 var(--sans);
+    transform:translateY(-1px);
+    transition:transform .16s ease;
+  }
+  .generate-btn:hover .btn-arrow{transform:translateX(4px)}
+  .privacy{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    margin:16px 0 0;
+    color:var(--muted);
+    font:9.5px/1.55 var(--mono);
+  }
+  .privacy .lock{color:var(--red-ink);font-size:10px;line-height:1.4}
+
+  /* ---------- 输出面板 ---------- */
+  .output-panel{
+    display:flex;
+    flex-direction:column;
+    background:var(--ink);
+    color:#f4efe3;
+    box-shadow:8px 8px 0 var(--red);
+  }
+  .output-panel .panel-head{border-bottom-color:#3b3b3b}
+  .output-panel .step{background:var(--red);color:#fff}
+  .output-panel .panel-head h2{color:#f8f3e8}
+  .output-panel .panel-head p{color:#858075}
+  .output-panel .tag{border-color:#464646;color:#878176}
+  .status-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    margin-left:auto;
+    height:28px;
+    padding:0 9px;
+    border:1px solid #4a4a4a;
+    color:#aaa397;
+    font:8.5px/1 var(--mono);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .status-chip i{
+    width:5px;height:5px;
+    border-radius:50%;
+    background:currentColor;
+  }
+  .status-chip.is-working{color:var(--acid);border-color:#68752b}
+  .status-chip.is-working i{animation:pulse .9s ease-in-out infinite}
+  .status-chip.is-failed{color:#ff7c64;border-color:#713023;background:rgba(230,58,31,.09)}
+  .status-chip.is-failed i{box-shadow:0 0 0 3px rgba(230,58,31,.16)}
+  .output-body{
+    display:flex;
+    flex:1;
+    flex-direction:column;
+    justify-content:center;
+    padding:22px;
+    min-height:498px;
+  }
+
+  .idle-state{
+    display:grid;
+    place-content:center;
+    justify-items:center;
+    gap:12px;
+    min-height:448px;
+    text-align:center;
+  }
+  .ghost-qr{
+    width:178px;
+    height:178px;
+    color:#f4efe3;
+    opacity:.13;
+    filter:blur(.2px);
+    animation:float 5.5s ease-in-out infinite;
+  }
+  .ghost-qr svg{display:block;width:100%;height:100%}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
+  .idle-state p{margin:4px 0 0;font-size:13px;color:#b8b1a4}
+  .idle-state span{
+    color:#777167;
+    font:8.5px/1 var(--mono);
+    letter-spacing:.24em;
+  }
+  .idle-scan{
+    position:relative;
+    width:178px;
+    height:1px;
+    margin-top:-26px;
+    overflow:hidden;
+    background:rgba(216,255,62,.13);
+  }
+  .idle-scan::after{
+    content:"";
+    position:absolute;
+    left:-30%;
+    top:0;
+    width:30%;
+    height:100%;
+    background:var(--acid);
+    animation:scan 2.8s ease-in-out infinite;
+  }
+  @keyframes scan{0%{left:-35%}55%,100%{left:105%}}
+
+  .working-state{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:448px;
+    padding:4px 5px;
+  }
+  .working-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    color:#d8d1c3;
+    font:10px/1 var(--mono);
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .working-head b{font:800 20px/1 var(--mono);color:var(--acid);letter-spacing:-.04em}
+  .progress{
+    position:relative;
+    height:17px;
+    margin-top:11px;
+    overflow:hidden;
+    border:1px solid #575248;
+    background:#202020;
+  }
+  .progress span{
+    display:block;
+    width:0;
+    height:100%;
+    background:var(--acid);
+    transition:width .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .working-log{
+    min-height:158px;
+    margin-top:22px;
+    color:#9e978a;
+    font:10.5px/2.1 var(--mono);
+  }
+  .working-log div{animation:logIn .2s ease both}
+  .working-log div::before{content:"> ";color:var(--red)}
+  @keyframes logIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+  .working-note{
+    margin:13px 0 0;
+    color:#68635a;
+    font:9px/1.5 var(--mono);
+    letter-spacing:.06em;
+  }
+
+  .result-state{
+    display:grid;
+    grid-template-columns:minmax(196px,.86fr) minmax(0,1.14fr);
+    gap:22px;
+    align-items:center;
+    width:100%;
+  }
+  .qr-stage{position:relative;width:100%;max-width:244px;margin:8px auto}
+  .qr-card{
+    position:relative;
+    padding:12px;
+    background:#fff;
+    border:2px solid #fff;
+    box-shadow:0 0 0 1px #000, 9px 9px 0 rgba(230,58,31,.24);
+  }
+  .qr-card::before,
+  .qr-card::after{
+    content:"";
+    position:absolute;
+    width:16px;height:16px;
+    pointer-events:none;
+    z-index:2;
+  }
+  .qr-card::before{
+    left:-5px;top:-5px;
+    border-left:3px solid var(--red);
+    border-top:3px solid var(--red);
+  }
+  .qr-card::after{
+    right:-5px;bottom:-5px;
+    border-right:3px solid var(--red);
+    border-bottom:3px solid var(--red);
+  }
+  #qrCanvas{
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:1;
+    background:#fff;
+    image-rendering:crisp-edges;
+  }
+  .stamp{
+    position:absolute;
+    right:-17px;
+    bottom:-13px;
+    z-index:4;
+    padding:6px 9px;
+    border:2px solid var(--ink);
+    background:var(--red);
+    color:#fff;
+    box-shadow:4px 4px 0 var(--ink);
+    font:800 11px/1 var(--mono);
+    letter-spacing:.18em;
+    transform:rotate(-9deg);
+  }
+  .result-info{min-width:0}
+  .fail-head{display:flex;align-items:center;gap:11px}
+  .fail-x{
+    width:38px;height:38px;
+    display:grid;
+    place-items:center;
+    flex:none;
+    background:var(--red);
+    color:#fff;
+    font:800 20px/1 var(--mono);
+    box-shadow:3px 3px 0 #000;
+  }
+  .fail-head strong{
+    display:block;
+    font-size:21px;
+    line-height:1.15;
+    letter-spacing:.01em;
+  }
+  .fail-head small{
+    display:block;
+    margin-top:4px;
+    color:#ff8d77;
+    font:9.5px/1 var(--mono);
+    letter-spacing:.06em;
+    overflow-wrap:anywhere;
+  }
+  .fail-reason{
+    margin:13px 0 0;
+    color:#b7b0a2;
+    font-size:11.5px;
+    line-height:1.7;
+  }
+  .payload-box{
+    margin-top:13px;
+    padding:9px 11px;
+    border-left:3px solid var(--red);
+    background:#1d1d1d;
+  }
+  .payload-box > span{
+    display:block;
+    color:#777167;
+    font:8px/1 var(--mono);
+    letter-spacing:.12em;
+    text-transform:uppercase;
+  }
+  .payload-box code{
+    display:block;
+    max-height:68px;
+    margin-top:5px;
+    overflow:auto;
+    color:#ffd8cf;
+    font:10.5px/1.55 var(--mono);
+    overflow-wrap:anywhere;
+    scrollbar-width:thin;
+  }
+  .meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    margin:13px 0 0;
+    border-top:1px solid #3b3b3b;
+  }
+  .meta div{
+    padding:8px 0 7px;
+    border-bottom:1px solid #3b3b3b;
+    min-width:0;
+  }
+  .meta div:nth-child(odd){padding-right:10px}
+  .meta dt{
+    color:#6e685f;
+    font:8px/1 var(--mono);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .meta dd{
+    margin:4px 0 0;
+    color:#d9d2c5;
+    font:10px/1.2 var(--mono);
+    overflow-wrap:anywhere;
+  }
+  .meta dd.bad{color:#ff7c64;font-weight:700}
+  .result-actions{
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:8px;
+    margin-top:14px;
+  }
+  .result-actions button{
+    min-height:37px;
+    padding:0 9px;
+    border:1px solid #68625a;
+    background:transparent;
+    color:#efe8da;
+    font:9.5px/1.2 var(--mono);
+    letter-spacing:.02em;
+    transition:background .16s ease,border-color .16s ease,color .16s ease;
+  }
+  .result-actions button:hover{
+    border-color:var(--red);
+    background:#2a1a16;
+    color:#fff;
+  }
+  .result-actions button:focus-visible{outline:2px solid var(--acid);outline-offset:2px}
+  .result-actions .btn-secondary{
+    background:#efe8da;
+    color:var(--ink);
+    border-color:#efe8da;
+    font-weight:700;
+  }
+  .result-actions .btn-secondary:hover{
+    background:var(--acid);
+    border-color:var(--acid);
+    color:var(--ink);
+  }
+  .scan-hint{
+    margin:9px 0 0;
+    color:#6e685f;
+    font:8.5px/1.4 var(--mono);
+    text-align:center;
+    letter-spacing:.04em;
+  }
+
+  .result-state.reveal .qr-stage{animation:qrReveal .5s cubic-bezier(.2,.8,.2,1) both}
+  .result-state.reveal .result-info{animation:infoReveal .45s .08s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes qrReveal{
+    from{opacity:0;transform:translateY(10px) rotate(-1.5deg);filter:blur(3px)}
+    to{opacity:1;transform:none;filter:none}
+  }
+  @keyframes infoReveal{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+  .output-panel.is-failed{animation:panelShake .34s ease both}
+  @keyframes panelShake{
+    0%,100%{transform:translate(0,0)}
+    20%{transform:translate(-2px,1px)}
+    45%{transform:translate(2px,-1px)}
+    70%{transform:translate(-1px,0)}
+  }
+
+  /* ---------- 日志 ---------- */
+  .log-panel{
+    margin-top:28px;
+    border:2px solid var(--ink);
+    background:var(--paper-2);
+    box-shadow:5px 5px 0 rgba(20,20,20,.14);
+  }
+  .log-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:15px;
+    padding:13px 17px;
+    border-bottom:2px solid var(--ink);
+  }
+  .log-head h2{margin:0;font-size:13px;letter-spacing:.03em}
+  .log-head span{color:var(--muted);font:8.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase}
+  .log-row{
+    display:grid;
+    grid-template-columns:76px 112px 142px minmax(0,1fr) 66px;
+    gap:14px;
+    align-items:center;
+    padding:10px 17px;
+    border-bottom:1px solid var(--line);
+    font:10px/1.3 var(--mono);
+  }
+  .log-row:last-child{border-bottom:0}
+  .log-header{
+    padding-top:7px;
+    padding-bottom:7px;
+    background:#e8e2d4;
+    color:#787267;
+    font-size:8px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .log-empty{
+    padding:24px 17px;
+    color:#948d7f;
+    font:10px/1.5 var(--mono);
+  }
+  .log-body{
+    max-height:246px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+    scrollbar-width:thin;
+    scrollbar-color:var(--ink) #e8e2d4;
+  }
+  .log-body:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+  .log-body::-webkit-scrollbar{width:12px}
+  .log-body::-webkit-scrollbar-track{background:#e8e2d4;border-left:1px solid var(--line)}
+  .log-body::-webkit-scrollbar-thumb{
+    background:var(--ink);
+    border:3px solid #e8e2d4;
+    border-radius:10px;
+  }
+  .log-body::-webkit-scrollbar-thumb:hover{background:var(--red-ink)}
+  .log-item{animation:rowIn .26s ease both}
+  @keyframes rowIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  .c-type{display:flex;align-items:center;gap:7px;font-weight:700;min-width:0}
+  .c-type em{
+    font-style:normal;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .log-dot{
+    width:5px;height:5px;
+    border-radius:50%;
+    background:var(--red);
+    flex:none;
+    box-shadow:0 0 0 2px rgba(230,58,31,.13);
+  }
+  .c-code{color:#5f5a50;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-payload{color:#8a8375;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-state{text-align:right;color:var(--red-ink);font-weight:700;font-size:8.5px;letter-spacing:.04em}
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    z-index:120;
+    max-width:calc(100vw - 32px);
+    padding:10px 14px;
+    border:2px solid var(--ink);
+    background:var(--ink);
+    color:#f6f0e3;
+    box-shadow:4px 4px 0 var(--red);
+    font:10px/1.4 var(--mono);
+    transform:translate(-50%,16px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  footer{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+    margin-top:25px;
+    padding-top:16px;
+    border-top:2px solid var(--ink);
+    color:var(--muted);
+    font:8.5px/1.5 var(--mono);
+    letter-spacing:.03em;
+  }
+  .footer-brand{display:flex;flex-direction:column;gap:4px}
+  .footer-brand .byline{color:var(--ink);font-weight:700;letter-spacing:.05em}
+  .footer-note{text-align:right}
+
+  @media (max-width:1040px){
+    .intro{grid-template-columns:minmax(0,1fr) minmax(250px,.72fr);gap:38px}
+    .seal{right:1%}
+    .result-state{grid-template-columns:minmax(170px,.8fr) minmax(0,1.2fr);gap:17px}
+    .qr-stage{max-width:214px}
+    .output-body{padding:18px}
+    .fail-head strong{font-size:19px}
+  }
+  @media (max-width:900px){
+    .intro{grid-template-columns:1fr;gap:26px;align-items:start}
+    .intro-copy{max-width:560px}
+    .seal{right:8%;top:4px}
+    .workbench{grid-template-columns:1fr}
+    .output-body{min-height:0}
+    .idle-state,.working-state{min-height:390px}
+    .log-row{grid-template-columns:70px 105px 132px minmax(0,1fr) 60px;gap:10px}
+  }
+  @media (max-width:680px){
+    .shell{padding:0 16px 24px}
+    .topbar{padding:16px 0 14px}
+    .brand-mark{width:38px;height:38px;padding:6px;gap:2px}
+    .brand-text strong{font-size:15px}
+    .brand-text small{font-size:8px}
+    .ver{display:none}
+    .topbar{gap:10px}
+    .mode-pill{height:28px;font-size:9px;padding:0 9px}
+    .intro{padding:31px 0 27px;gap:22px}
+    h1{font-size:clamp(43px,12.5vw,62px)}
+    .seal{display:none}
+    .intro-copy{padding-left:14px}
+    .intro-copy > p{font-size:13px}
+    .intro-stats{gap:9px;margin-top:19px}
+    .intro-stats b{font-size:21px}
+    .intro-stats span{font-size:7.5px}
+    .panel{box-shadow:5px 5px 0 var(--ink)}
+    .output-panel{box-shadow:5px 5px 0 var(--red)}
+    .panel-head{padding:14px 14px;gap:10px}
+    .step{width:30px;height:30px;font-size:10.5px}
+    .panel-head h2{font-size:15px}
+    .panel-head p{font-size:7.5px}
+    .tag{display:none}
+    .input-body{padding:16px}
+    textarea{min-height:135px;padding:14px;font-size:14px}
+    .settings{gap:7px;margin-top:13px}
+    .setting{padding:9px 10px}
+    .setting-label{font-size:8px}
+    .fake-select{font-size:9px;gap:4px}
+    .generate-btn{min-height:64px;margin-top:15px}
+    .btn-main{font-size:18px}
+    .btn-sub{font-size:7.5px}
+    .privacy{font-size:8.5px}
+    .output-body{padding:15px}
+    .result-state{grid-template-columns:1fr;gap:22px}
+    .qr-stage{max-width:218px;margin-top:10px}
+    .result-info{padding:0 2px}
+    .result-actions{grid-template-columns:1fr 1fr}
+    .idle-state,.working-state{min-height:330px}
+    .working-log{min-height:138px}
+    .log-panel{margin-top:20px}
+    .log-row{grid-template-columns:94px minmax(0,1fr) 52px;gap:10px;padding:9px 12px;font-size:9px}
+    .log-header{font-size:7.5px}
+    .c-time,.c-code{display:none}
+    .log-body{max-height:220px}
+    footer{flex-direction:column;align-items:flex-start;gap:5px;margin-top:20px}
+    .footer-note{text-align:left}
+  }
+  @media (max-width:480px){
+    .brand-text small{display:none}
+    .mode-pill{font-size:8px;padding:0 7px;gap:5px}
+  }
+  @media (max-width:390px){
+    .settings{grid-template-columns:1fr}
+    .setting-wide{grid-column:auto}
+    .mode-pill{font-size:8px}
+    h1{font-size:41px}
+    .result-actions{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+      animation-duration:.001ms!important;
+      animation-iteration-count:1!important;
+      transition-duration:.001ms!important;
+      scroll-behavior:auto!important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <div class="ticker-group">
+      <span>GENERATION FAILED</span><i>✕</i>
+      <span>生成失败</span><i>✕</i>
+      <span>CHECKSUM MISMATCH</span><i>✕</i>
+      <span>无内容</span><i>✕</i>
+      <span>DATA CORRUPTED</span><i>✕</i>
+      <span>乱码溢出</span><i>✕</i>
+      <span>ERROR 404</span><i>✕</i>
+      <span>二维码内容丢失</span><i>✕</i>
+    </div>
+    <div class="ticker-group">
+      <span>GENERATION FAILED</span><i>✕</i>
+      <span>生成失败</span><i>✕</i>
+      <span>CHECKSUM MISMATCH</span><i>✕</i>
+      <span>无内容</span><i>✕</i>
+      <span>DATA CORRUPTED</span><i>✕</i>
+      <span>乱码溢出</span><i>✕</i>
+      <span>ERROR 404</span><i>✕</i>
+      <span>二维码内容丢失</span><i>✕</i>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="QR Fault 首页">
+      <span class="brand-mark" aria-hidden="true">
+        <i></i><i></i><i></i>
+        <i></i><i></i><i></i>
+        <i></i><i></i><i></i>
+      </span>
+      <span class="brand-text">
+        <strong>QR//FAULT</strong>
+        <small>二维码生成器 · FAULT EDITION</small>
+      </span>
+    </a>
+    <div class="top-meta">
+      <span class="mode-pill"><span class="pulse-dot"></span>整蛊模式 · 已启用</span>
+      <span class="ver">BUILD 0.0.4</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div class="intro-left">
+        <p class="eyebrow">A GENERATOR THAT NEVER DELIVERS</p>
+        <h1>输入一切，<br><span class="fail-word">输出错误</span><span class="fail-x">✕</span></h1>
+        <div class="seal" aria-hidden="true">成功率<br><b>0%</b>保证失败</div>
+      </div>
+      <div class="intro-copy">
+        <p>这是一个专业、严谨、完全不可用的二维码生成器。它会认真读取你的输入，然后彻底忘掉，最后给你一个货真价实的错误二维码。</p>
+        <div class="intro-stats" aria-label="产品指标">
+          <div><b>0%</b><span>生成成功率</span></div>
+          <div><b>100%</b><span>错误率</span></div>
+          <div><b id="errorCount">160</b><span>错误文本</span></div>
+        </div>
+        <p class="credit">by <b>MC CYA2014</b> &amp; <b>DeepSeek-V4.1-Flash-1017</b></p>
+      </div>
+    </section>
+
+    <section class="workbench" aria-label="二维码故障工作台">
+      <div class="panel input-panel">
+        <div class="panel-head">
+          <span class="step">01</span>
+          <div>
+            <h2>输入内容</h2>
+            <p>INPUT / 你尽管输，反正不会用</p>
+          </div>
+          <span class="tag">UTF-8</span>
+        </div>
+
+        <div class="input-body">
+          <label class="sr-only" for="source">要生成二维码的内容</label>
+          <div class="textarea-wrap">
+            <textarea id="source" maxlength="2000" placeholder="粘贴链接、文字，或任何你不想被扫出来的东西……" spellcheck="false" autocomplete="off"></textarea>
+            <div class="ta-foot">
+              <span id="charCount" class="char-count">0 / 2000</span>
+              <span class="ta-note">输入将在生成前被丢弃</span>
+            </div>
+          </div>
+
+          <div class="settings" aria-label="生成设置（均不会生效）">
+            <div class="setting" data-ignored="纠错等级" title="该选项不会生效">
+              <span class="setting-label">纠错等级</span>
+              <span class="fake-select">H · 30% <i>⌄</i></span>
+            </div>
+            <div class="setting" data-ignored="输出尺寸" title="该选项不会生效">
+              <span class="setting-label">输出尺寸</span>
+              <span class="fake-select">1024 px <i>⌄</i></span>
+            </div>
+            <div class="setting setting-wide" data-ignored="失败浓度" title="该选项永远不会低于 100%">
+              <span class="setting-label">失败浓度</span>
+              <div class="meter" aria-hidden="true"><span></span></div>
+              <b class="meter-val">100%</b>
+            </div>
+          </div>
+
+          <button id="generate" class="generate-btn" type="button">
+            <span class="btn-copy">
+              <span class="btn-main">生成二维码</span>
+              <span class="btn-sub">GENERATE / WILL FAIL</span>
+            </span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+
+          <p class="privacy" id="privacyNote"><span class="lock" aria-hidden="true">▣</span><span>严格失败模式：不保存、不使用、不生成你的内容。</span></p>
+        </div>
+      </div>
+
+      <div class="panel output-panel" id="outputPanel">
+        <div class="panel-head">
+          <span class="step">02</span>
+          <div>
+            <h2>输出结果</h2>
+            <p>OUTPUT / 必然不成功</p>
+          </div>
+          <span class="status-chip" id="statusChip"><i></i><span id="statusText">待机</span></span>
+        </div>
+
+        <div class="output-body">
+          <div id="idleState" class="idle-state">
+            <div class="ghost-qr" aria-hidden="true">
+              <svg viewBox="0 0 21 21" shape-rendering="crispEdges" fill="currentColor">
+                <path fill-rule="evenodd" d="M0 0h7v7H0V0zm1 1v5h5V1H1z"/>
+                <rect x="2" y="2" width="3" height="3"/>
+                <path fill-rule="evenodd" d="M14 0h7v7h-7V0zm1 1v5h5V1h-5z"/>
+                <rect x="16" y="2" width="3" height="3"/>
+                <path fill-rule="evenodd" d="M0 14h7v7H0v-7zm1 1v5h5v-5H1z"/>
+                <rect x="2" y="16" width="3" height="3"/>
+                <rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/>
+                <rect x="9" y="2" width="1" height="1"/><rect x="12" y="2" width="1" height="1"/>
+                <rect x="10" y="3" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/>
+                <rect x="12" y="4" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/>
+                <rect x="11" y="6" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/>
+                <rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/>
+                <rect x="0" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/>
+                <rect x="4" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/>
+                <rect x="9" y="9" width="1" height="1"/><rect x="13" y="9" width="1" height="1"/>
+                <rect x="15" y="9" width="1" height="1"/><rect x="17" y="9" width="1" height="1"/>
+                <rect x="19" y="9" width="1" height="1"/><rect x="1" y="10" width="1" height="1"/>
+                <rect x="3" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/>
+                <rect x="8" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/>
+                <rect x="14" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/>
+                <rect x="18" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/>
+                <rect x="0" y="11" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/>
+                <rect x="9" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/>
+                <rect x="15" y="11" width="1" height="1"/><rect x="19" y="11" width="1" height="1"/>
+                <rect x="8" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/>
+                <rect x="13" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/>
+                <rect x="18" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/>
+                <rect x="9" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/>
+                <rect x="14" y="13" width="1" height="1"/><rect x="17" y="13" width="1" height="1"/>
+                <rect x="19" y="13" width="1" height="1"/><rect x="8" y="14" width="1" height="1"/>
+                <rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/>
+                <rect x="15" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/>
+                <rect x="20" y="14" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/>
+                <rect x="11" y="15" width="1" height="1"/><rect x="13" y="15" width="1" height="1"/>
+                <rect x="16" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/>
+                <rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/>
+                <rect x="14" y="16" width="1" height="1"/><rect x="17" y="16" width="1" height="1"/>
+                <rect x="20" y="16" width="1" height="1"/><rect x="9" y="17" width="1" height="1"/>
+                <rect x="12" y="17" width="1" height="1"/><rect x="15" y="17" width="1" height="1"/>
+                <rect x="18" y="17" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/>
+                <rect x="13" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/>
+                <rect x="19" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/>
+                <rect x="11" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/>
+                <rect x="17" y="19" width="1" height="1"/><rect x="20" y="19" width="1" height="1"/>
+                <rect x="9" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/>
+                <rect x="15" y="20" width="1" height="1"/><rect x="18" y="20" width="1" height="1"/>
+              </svg>
+            </div>
+            <div class="idle-scan" aria-hidden="true"></div>
+            <p>等待一次注定失败的生成</p>
+            <span>READY TO FAIL</span>
+          </div>
+
+          <div id="workingState" class="working-state" hidden>
+            <div class="working-head">
+              <span>正在生成 / WORKING</span>
+              <b id="progressPct">0%</b>
+            </div>
+            <div class="progress" role="progressbar" aria-label="生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack">
+              <span id="progressBar"></span>
+            </div>
+            <div class="working-log" id="workingLog" aria-live="polite"></div>
+            <p class="working-note">请稍候，正在努力失败……</p>
+          </div>
+
+          <div id="resultState" class="result-state" hidden aria-live="polite">
+            <div class="qr-stage">
+              <div class="qr-card">
+                <canvas id="qrCanvas" width="1024" height="1024" aria-label="包含错误信息的二维码"></canvas>
+              </div>
+              <div class="stamp" aria-hidden="true">FAILED</div>
+            </div>
+            <div class="result-info">
+              <div class="fail-head">
+                <span class="fail-x" aria-hidden="true">✕</span>
+                <div>
+                  <strong id="failTitle">生成失败</strong>
+                  <small id="failCode">QR-GEN-0000</small>
+                </div>
+              </div>
+              <p class="fail-reason" id="failReason">编码器在写入有效内容之前主动退出。</p>
+              <div class="payload-box">
+                <span>二维码实际内容 / ACTUAL PAYLOAD</span>
+                <code id="payloadText">生成失败</code>
+              </div>
+              <dl class="meta">
+                <div><dt>任务编号 / TASK</dt><dd id="taskId">#00000000</dd></div>
+                <div><dt>有效载荷 / SIZE</dt><dd id="payloadBytes">0 B</dd></div>
+                <div><dt>校验结果 / CHECKSUM</dt><dd class="bad">MISMATCH</dd></div>
+                <div><dt>耗时 / ELAPSED</dt><dd id="elapsed">0.00s</dd></div>
+              </dl>
+              <div class="result-actions">
+                <button id="download" class="btn-secondary" type="button">下载这张废码 ↓</button>
+                <button id="retry" class="btn-ghost" type="button">再失败一次 ↻</button>
+              </div>
+              <p class="scan-hint">用手机扫一扫，看看它有多离谱。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="log-panel" aria-labelledby="logTitle">
+      <div class="log-head">
+        <h2 id="logTitle">失败日志</h2>
+        <span>ERROR LOG / 最近 160 次 · 滚轮查看</span>
+      </div>
+      <div class="log-table" role="table" aria-label="二维码失败日志">
+        <div class="log-row log-header" role="row">
+          <span class="c-time" role="columnheader">时间</span>
+          <span class="c-type" role="columnheader">类型</span>
+          <span class="c-code" role="columnheader">错误码</span>
+          <span class="c-payload" role="columnheader">实际内容</span>
+          <span class="c-state" role="columnheader">状态</span>
+        </div>
+        <div id="logBody" class="log-body" tabindex="0" aria-label="失败日志，使用滚轮上下查看">
+          <div class="log-empty">尚无失败记录。点击「生成二维码」开始。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-brand">
+      <span>QR//FAULT — 一个故意不好用的二维码生成器。</span>
+      <span class="byline">by MC CYA2014 &amp; DeepSeek-V4.1-Flash-1017</span>
+    </div>
+    <span class="footer-note">仅供整蛊与交互演示 · 请勿用于正式场景</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><div style="position:fixed;inset:auto 16px 16px;z-index:200;padding:14px;background:#141414;color:#fff;font:12px/1.5 monospace">需要启用 JavaScript 才能生成（失败的）二维码。</div></noscript>
+
+<!-- qrcode-generator v1.4.4 · Copyright (c) 2009 Kazuhiko Arase · MIT License -->
+<script>
+/**
+ * Minified by jsDelivr using Terser v5.37.0.
+ * Original file: /npm/qrcode-generator@1.4.4/qrcode.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,(function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1}))},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}((function(){return qrcode}));
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
+  var $ = function (selector, root) { return (root || document).querySelector(selector); };
+  var source = $('#source');
+  var charCount = $('#charCount');
+  var generateBtn = $('#generate');
+  var outputPanel = $('#outputPanel');
+  var statusChip = $('#statusChip');
+  var statusText = $('#statusText');
+  var idleState = $('#idleState');
+  var workingState = $('#workingState');
+  var resultState = $('#resultState');
+  var workingLog = $('#workingLog');
+  var progressBar = $('#progressBar');
+  var progressPct = $('#progressPct');
+  var progressTrack = $('#progressTrack');
+  var qrCanvas = $('#qrCanvas');
+  var failTitle = $('#failTitle');
+  var failCode = $('#failCode');
+  var failReason = $('#failReason');
+  var payloadText = $('#payloadText');
+  var payloadBytes = $('#payloadBytes');
+  var taskId = $('#taskId');
+  var elapsedEl = $('#elapsed');
+  var privacyNote = $('#privacyNote');
+  var downloadBtn = $('#download');
+  var retryBtn = $('#retry');
+  var toastEl = $('#toast');
+  var btnMain = $('.btn-main', generateBtn);
+  var btnSub = $('.btn-sub', generateBtn);
+
+  var state = { busy: false, last: null, history: [] };
+  var toastTimer = null;
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var ERROR_TYPES = [
+    {
+      key: 'GEN',
+      label: '生成失败',
+      title: '生成失败',
+      reason: '编码器成功启动，但在写入你的内容之前决定放弃。',
+      variants: [
+        '生成失败',
+        '生成失败：编码器已主动退出',
+        '生成失败：有效载荷写入前丢失',
+        '生成失败：内容被系统安全遗忘',
+        '生成失败：编码任务被标记为不可完成',
+        '生成失败：输入与输出失去联系',
+        '生成失败：二维码拒绝承载正确内容',
+        '生成失败：生成队列已清空',
+        '生成失败：目标数据未通过存在性检查',
+        '生成失败：编码器返回了空结果',
+        '生成失败：错误优先策略已生效',
+        '生成失败：内容在最后一毫秒被丢弃',
+        '生成失败：系统选择不生成',
+        '生成失败：任务已取消，原因未知',
+        '生成失败：二维码已损坏，无法修复',
+        '生成失败：内容已被清空',
+        '生成失败：服务器死机了',
+        '生成失败：Never Gonna Give You Up~'
+      ]
+    },
+    {
+      key: 'MOJI',
+      label: '乱码',
+      title: '乱码溢出',
+      reason: '字符集在传输过程中发生不可逆坍缩，只剩下一堆熟悉又陌生的字。',
+      variants: [
+        '锟斤拷锟斤拷烫烫烫烫',
+        'ҵ 锟斤拷 锟斤拷',
+        'ÃÊËÙÖÐÎÄÂÒÂë',
+        '烫烫烫烫烫烫烫烫',
+        '锟斤拷烫烫烫：字符集坍缩',
+        '乱码：ï¿½ï¿½ï¿½',
+        '乱码：æ–‡ä»¶å·²æŸ',
+        '乱码：GBK 与 UTF-8 打架',
+        '乱码：?°?±?? 内容不可读',
+        '乱码：□□□□□□',
+        '乱码：鍙戦€佸け璐?',
+        '乱码：字符已变成方块',
+        '乱码：解码器看见了乱码',
+        '乱码：内容在传输中融化',
+        '乱码：锘匡拷锟斤拷',
+        '乱码：锟斤拷已接管内容'
+      ]
+    },
+    {
+      key: 'NULL',
+      label: '无内容',
+      title: '无内容',
+      reason: '二维码生成成功，但它什么也没装。扫码结果为空。',
+      variants: [
+        '',
+        '无内容',
+        '内容为空',
+        '空载荷',
+        'NULL',
+        '无内容：二维码中没有任何数据',
+        '无内容：扫码结果为空字符串',
+        '无内容：有效载荷长度为 0',
+        '无内容：内容已被完全移除',
+        '无内容：没有可解码的字节',
+        '无内容：二维码只是一个空壳',
+        '无内容：未找到任何内容',
+        '无内容：数据区为空',
+        '无内容：空白二维码',
+        '无内容：什么也没有',
+        '无内容：空字节序列',
+        '棍母'
+      ]
+    },
+    {
+      key: 'CODE',
+      label: '错误代码',
+      title: '错误代码',
+      reason: '系统认为，与其给你内容，不如给你一串看起来很专业的代码。',
+      variants: [
+        '错误代码：{code}',
+        'ERROR CODE: {code}',
+        'ERR::{code}',
+        '错误代码 {code}：未知故障',
+        '错误代码：{code} / 请重试',
+        '错误代码：{code} / 无解决方案',
+        '错误代码：{code} / 内容丢失',
+        '错误代码：{code} / 校验中断',
+        '错误代码：{code} / 编码器异常',
+        '错误代码：{code} / 数据不可用',
+        '错误代码：{code} / 任务被终止',
+        '错误代码：{code} / 结果不可恢复',
+        '错误代码：{code} / 请联系虚空',
+        '错误代码：{code} / 错误已确认',
+        '错误代码：{code} / 失败已记录',
+        '错误代码：{code} / 无法归类'
+      ]
+    },
+    {
+      key: 'CHK',
+      label: '校验失败',
+      title: '校验失败',
+      reason: '里德-所罗门纠错码被用来制造错误，并且干得不错。',
+      variants: [
+        '校验失败：CHECKSUM MISMATCH',
+        '校验失败：CRC32 不匹配',
+        '校验失败：SHA-256 对不上',
+        '校验失败：数据指纹不一致',
+        '校验失败：完整性检查未通过',
+        '校验失败：校验位被故意写反',
+        '校验失败：里德-所罗门码失效',
+        '校验失败：纠错码拒绝合作',
+        '校验失败：签名无效',
+        '校验失败：内容哈希丢失',
+        '校验失败：校验和等于错误',
+        '校验失败：验证器返回 FALSE',
+        '校验失败：数据块无法确认',
+        '校验失败：二维码校验链断裂',
+        '校验失败：校验结果不可信',
+        '校验失败：校验值不存在'
+      ]
+    },
+    {
+      key: 'DAT',
+      label: '数据损坏',
+      title: '数据损坏',
+      reason: '有效载荷在最后 1 毫秒被替换成了损坏提示。',
+      variants: [
+        '数据损坏 · 无法解码',
+        '数据损坏：字节序错乱',
+        '数据损坏：有效载荷被截断',
+        '数据损坏：内容已被替换',
+        '数据损坏：文件头缺失',
+        '数据损坏：数据区出现空洞',
+        '数据损坏：二维码矩阵异常',
+        '数据损坏：解码器读取失败',
+        '数据损坏：内容不可恢复',
+        '数据损坏：字节流已污染',
+        '数据损坏：存储块已失效',
+        '数据损坏：数据在写入时蒸发',
+        '数据损坏：无法还原原始内容',
+        '数据损坏：二维码已碎片化',
+        '数据损坏：读取结果不可用',
+        '数据损坏：内容已不可读',
+        '数据损坏：数据库被黑客入侵了',
+      ]
+    },
+    {
+      key: '404',
+      label: '内容未找到',
+      title: '404 NOT FOUND',
+      reason: '二维码指向的内容不存在，而且从未存在过。',
+      variants: [
+        'ERROR 404: QR CONTENT NOT FOUND',
+        '404：二维码内容未找到',
+        '404：目标内容不存在',
+        '404：内容已从二维码中移除',
+        '404：扫描成功，内容失踪',
+        '404：请求的内容从未存在',
+        '404：二维码指向空白',
+        '404：找不到可解码内容',
+        '404：内容路由失败',
+        '404：数据端点不可达',
+        '404：二维码资源已删除',
+        '404：没有找到任何有效载荷',
+        '404：内容索引损坏',
+        '404：目标地址为空',
+        '404：错误页代替了内容',
+        '404：二维码里只有 404'
+      ]
+    },
+    {
+      key: 'AUTH',
+      label: '权限不足',
+      title: '权限不足',
+      reason: '当前账户没有获得正确结果的权限。升级也没有用。',
+      variants: [
+        '生成失败：权限不足 (E_ACCES)',
+        '权限不足：无法写入正确内容',
+        '权限不足：编码器拒绝服务',
+        '权限不足：当前账户无权成功',
+        '权限不足：错误权限已授予',
+        '权限不足：内容访问被拒绝',
+        '权限不足：二维码锁定',
+        '权限不足：需要更高失败等级',
+        '权限不足：安全策略阻止生成',
+        '权限不足：令牌无效',
+        '权限不足：授权服务器离线',
+        '权限不足：用户不在白名单',
+        '权限不足：请求已被隔离',
+        '权限不足：只允许生成错误',
+        '权限不足：管理员也救不了',
+        '权限不足：错误也不属于你'
+      ]
+    },
+    {
+      key: 'TIME',
+      label: '生成超时',
+      title: '生成超时',
+      reason: '等待内容超时。系统已将你的输入安全地遗忘。',
+      variants: [
+        '生成超时：内容已丢失',
+        '生成超时：编码器未响应',
+        '生成超时：等待内容失败',
+        '生成超时：任务超过最大失败时间',
+        '生成超时：二维码未在时限内出现',
+        '生成超时：数据包已过期',
+        '生成超时：连接内容超时',
+        '生成超时：重试次数已耗尽',
+        '生成超时：请求被时间吞没',
+        '生成超时：结果返回前已失效',
+        '生成超时：会话已结束',
+        '生成超时：内容未能抵达',
+        '生成超时：二维码生成器睡着了',
+        '生成超时：等待一个不会来的结果',
+        '生成超时：时间到了，内容没有',
+        '生成超时：等待被永久取消',
+        '生成超时：服务器被DDOS,停机100年'
+      ]
+    },
+    {
+      key: 'ENC',
+      label: '编码异常',
+      title: '编码异常',
+      reason: 'Unicode 编码器拒绝合作，并留下了一段异常信息。',
+      variants: [
+        "UnicodeEncodeError: 'utf-8' codec can't encode",
+        '编码异常：UTF-8 编码失败',
+        '编码异常：字符无法映射',
+        '编码异常：字节序列非法',
+        '编码异常：代理对损坏',
+        '编码异常：编码器返回 NULL',
+        '编码异常：字符集不兼容',
+        '编码异常：输入被错误转义',
+        '编码异常：解码器陷入循环',
+        '编码异常：字节长度溢出',
+        '编码异常：不可表示的字符',
+        '编码异常：编码表缺失',
+        '编码异常：数据流中断',
+        '编码异常：二维码矩阵写入失败',
+        '编码异常：未知的编码错误',
+        '编码异常：无法完成字节转换'
+      ]
+    }
+  ];
+
+  var ERROR_POOL = [];
+  ERROR_TYPES.forEach(function (type) {
+    type.variants.forEach(function (text) {
+      ERROR_POOL.push({ type: type, text: text });
+    });
+  });
+  $('#errorCount').textContent = String(ERROR_POOL.length);
+
+  function randomInt(max) {
+    if (window.crypto && window.crypto.getRandomValues) {
+      var a = new Uint32Array(1);
+      window.crypto.getRandomValues(a);
+      return a[0] % max;
+    }
+    return Math.floor(Math.random() * max);
+  }
+
+  function pick(list) {
+    return list[randomInt(list.length)];
+  }
+
+  function hex(length) {
+    var chars = '0123456789ABCDEF';
+    var out = '';
+    for (var i = 0; i < length; i++) out += chars[randomInt(chars.length)];
+    return out;
+  }
+
+  function formatTime(date) {
+    return new Intl.DateTimeFormat('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(date);
+  }
+
+  function byteLength(text) {
+    if (window.TextEncoder) return new TextEncoder().encode(text).length;
+    return unescape(encodeURIComponent(text)).length;
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function chooseError() {
+    var recentKeys = state.history.slice(0, 2).map(function (item) { return item.key; });
+    var typePool = ERROR_TYPES.filter(function (type) {
+      return recentKeys.indexOf(type.key) === -1;
+    });
+    if (!typePool.length) typePool = ERROR_TYPES;
+    var type = pick(typePool);
+
+    var recentPayloads = state.history.slice(0, 24).map(function (item) { return item.payload; });
+    var variants = type.variants.filter(function (text) {
+      return recentPayloads.indexOf(text) === -1;
+    });
+    if (!variants.length) variants = type.variants;
+    var text = pick(variants);
+
+    var code = 'QR-' + type.key + '-' + hex(4);
+    return {
+      key: type.key,
+      label: type.label,
+      title: type.title,
+      reason: type.reason,
+      code: code,
+      payload: text.replace(/\{code\}/g, code),
+      at: new Date()
+    };
+  }
+
+  function setProgress(value) {
+    var v = Math.max(0, Math.min(100, value));
+    progressBar.style.width = v + '%';
+    progressPct.textContent = v + '%';
+    progressTrack.setAttribute('aria-valuenow', String(v));
+  }
+
+  function addWorkingLine(text) {
+    var line = document.createElement('div');
+    line.textContent = text;
+    workingLog.appendChild(line);
+  }
+
+  function setView(view) {
+    idleState.hidden = view !== 'idle';
+    workingState.hidden = view !== 'working';
+    resultState.hidden = view !== 'result';
+    statusChip.classList.remove('is-working', 'is-failed');
+    if (view === 'working') {
+      statusChip.classList.add('is-working');
+      statusText.textContent = '编码中';
+    } else if (view === 'result') {
+      statusChip.classList.add('is-failed');
+      statusText.textContent = '失败';
+    } else {
+      statusText.textContent = '待机';
+    }
+  }
+
+  function drawQR(payload) {
+    var qr = qrcode(0, 'H');
+    qr.addData(payload, 'Byte');
+    qr.make();
+
+    var count = qr.getModuleCount();
+    var quiet = 4;
+    var total = count + quiet * 2;
+    var size = qrCanvas.width;
+    var px = size / total;
+    var ctx = qrCanvas.getContext('2d', { alpha: false });
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#111111';
+
+    for (var row = 0; row < count; row++) {
+      for (var col = 0; col < count; col++) {
+        if (!qr.isDark(row, col)) continue;
+        var x0 = Math.round((col + quiet) * px);
+        var x1 = Math.round((col + quiet + 1) * px);
+        var y0 = Math.round((row + quiet) * px);
+        var y1 = Math.round((row + quiet + 1) * px);
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      }
+    }
+
+    qrCanvas.setAttribute(
+      'aria-label',
+      payload ? '二维码内容：' + payload : '二维码内容：空'
+    );
+  }
+
+  function renderResult(item, elapsed, discarded) {
+    failTitle.textContent = item.title;
+    failCode.textContent = item.code;
+    failReason.textContent = item.reason;
+    payloadText.textContent = item.payload || '（空字符串）';
+    payloadText.title = item.payload || '（空字符串）';
+    payloadBytes.textContent = byteLength(item.payload) + ' B';
+    taskId.textContent = '#' + hex(8);
+    elapsedEl.textContent = (elapsed / 1000).toFixed(2) + 's';
+    privacyNote.lastElementChild.textContent =
+      '已丢弃 ' + discarded + ' 个字符 · 未写入二维码。';
+
+    setView('result');
+    if (!reducedMotion) {
+      resultState.classList.remove('reveal');
+      outputPanel.classList.remove('is-failed');
+      void resultState.offsetWidth;
+      resultState.classList.add('reveal');
+      outputPanel.classList.add('is-failed');
+      setTimeout(function () { outputPanel.classList.remove('is-failed'); }, 420);
+    }
+
+    if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) {
+      setTimeout(function () {
+        outputPanel.scrollIntoView({
+          behavior: reducedMotion ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      }, 160);
+    }
+  }
+
+  function addHistory(item) {
+    state.history.unshift(item);
+    state.history = state.history.slice(0, 160);
+
+    var logBody = $('#logBody');
+    logBody.textContent = '';
+
+    state.history.forEach(function (entry) {
+      var row = document.createElement('div');
+      row.className = 'log-row log-item';
+      row.setAttribute('role', 'row');
+
+      var time = document.createElement('span');
+      time.className = 'c-time';
+      time.setAttribute('role', 'cell');
+      time.textContent = formatTime(entry.at);
+
+      var type = document.createElement('span');
+      type.className = 'c-type';
+      type.setAttribute('role', 'cell');
+      var dot = document.createElement('span');
+      dot.className = 'log-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      var typeText = document.createElement('em');
+      typeText.textContent = entry.label;
+      type.appendChild(dot);
+      type.appendChild(typeText);
+
+      var code = document.createElement('span');
+      code.className = 'c-code';
+      code.setAttribute('role', 'cell');
+      code.textContent = entry.code;
+
+      var payload = document.createElement('span');
+      payload.className = 'c-payload';
+      payload.setAttribute('role', 'cell');
+      payload.textContent = entry.payload || '（空）';
+      payload.title = entry.payload || '（空字符串）';
+
+      var status = document.createElement('span');
+      status.className = 'c-state';
+      status.setAttribute('role', 'cell');
+      status.textContent = 'FAILED';
+
+      row.appendChild(time);
+      row.appendChild(type);
+      row.appendChild(code);
+      row.appendChild(payload);
+      row.appendChild(status);
+      logBody.appendChild(row);
+    });
+
+    logBody.scrollTop = 0;
+  }
+
+  function showToast(message) {
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove('show');
+    }, 1900);
+  }
+
+  async function generate() {
+    if (state.busy) return;
+    state.busy = true;
+    generateBtn.disabled = true;
+    btnMain.textContent = '正在失败…';
+    btnSub.textContent = 'PLEASE WAIT / FAILING';
+
+    var discarded = source.value.length;
+
+    workingLog.textContent = '';
+    setProgress(0);
+    setView('working');
+
+    var steps = [
+      { p: 12, wait: 120, text: '接收输入 · ' + discarded + ' chars' },
+      { p: 29, wait: 170, text: '建立编码会话 · OK' },
+      { p: 47, wait: 180, text: '映射字符集 · LOST' },
+      { p: 66, wait: 180, text: '写入有效载荷 · SKIPPED' },
+      { p: 84, wait: 190, text: '生成纠错码 · INVERTED' },
+      { p: 96, wait: 210, text: '执行完整性校验 · ...' }
+    ];
+
+    try {
+      for (var i = 0; i < steps.length; i++) {
+        await sleep(steps[i].wait);
+        setProgress(steps[i].p);
+        addWorkingLine(steps[i].text);
+      }
+      await sleep(190);
+
+      var item = chooseError();
+      var elapsed = 1050 + randomInt(450);
+
+      try {
+        drawQR(item.payload);
+      } catch (error) {
+        item.payload = '生成失败';
+        item.title = '生成失败';
+        item.reason = '连错误二维码都差点没生成出来。';
+        drawQR(item.payload);
+      }
+
+      state.last = item;
+      renderResult(item, elapsed, discarded);
+      addHistory(item);
+    } finally {
+      state.busy = false;
+      generateBtn.disabled = false;
+      btnMain.textContent = '生成二维码';
+      btnSub.textContent = 'GENERATE / WILL FAIL';
+    }
+  }
+
+  function download() {
+    if (!state.last) return;
+    var safeCode = state.last.code.replace(/[\\/:*?"<>|]/g, '-');
+    var filename = 'QR_' + safeCode + '_FAILED.png';
+
+    function save(url, revoke) {
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      if (revoke) setTimeout(function () { URL.revokeObjectURL(url); }, 1200);
+      showToast('废码已下载。祝你失败得开心。');
+    }
+
+    if (qrCanvas.toBlob) {
+      qrCanvas.toBlob(function (blob) {
+        if (!blob) {
+          save(qrCanvas.toDataURL('image/png'), false);
+          return;
+        }
+        save(URL.createObjectURL(blob), true);
+      }, 'image/png');
+    } else {
+      save(qrCanvas.toDataURL('image/png'), false);
+    }
+  }
+
+  source.addEventListener('input', function () {
+    var length = source.value.length;
+    charCount.textContent = length + ' / 2000';
+    charCount.classList.toggle('is-over', length >= 1900);
+  });
+
+  source.addEventListener('keydown', function (event) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      generate();
+    }
+  });
+
+  generateBtn.addEventListener('click', generate);
+  retryBtn.addEventListener('click', generate);
+  downloadBtn.addEventListener('click', download);
+
+  document.querySelectorAll('[data-ignored]').forEach(function (element) {
+    element.addEventListener('click', function () {
+      showToast('「' + element.getAttribute('data-ignored') + '」已忽略：反正都会失败。');
+    });
+  });
+
+  window.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') toastEl.classList.remove('show');
+  });
+})();
+</script>
+</body>
+</html>
