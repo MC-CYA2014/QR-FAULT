@@ -10,17 +10,20 @@
 
 ## 快速开始
 
-无需安装依赖，直接用浏览器打开：[qr-fail-generator.html](qr-fail-generator.html)
+无需安装依赖，直接用浏览器打开：index.html文件
 
 ```text
-qr-fail-generator.html
+index.html
 ```
 
 Windows 也可以：
 
 ```powershell
-start .\qr-fail-generator.html
+start .\index.html
 ```
+
+或者打开
+[在线预览](https://mc-cya2014.github.io/QR-FAULT/)
 
 页面完全离线运行，不会发起网络请求。
 
