@@ -1,16 +1,27 @@
-# QR//FAULT — 故障模式二维码生成器
+# QR-FAULT — 故障模式二维码生成器
 
-一个**故意不好用**的二维码生成器：无论你输入什么，它都不会把输入写进二维码，而是从 160 条错误文本中随机挑一条，生成一个**真正可扫描、但内容一定是错误**的二维码。
+一个**故意不好用**的二维码生成器：无论你输入什么，它都不会把输入写进二维码，而是从 165 条错误文本中随机挑一条，生成一个**真正可扫描、但内容一定是错误**的二维码。
 
 > 本项目仅供娱乐、交互演示和前端练习，请勿用于正式业务或任何需要正确二维码的场景。
 >
-> **状态：** intentionally broken · **错误文本：** 160 条 · **构建：** 单文件、离线可用
+> **状态：** intentionally broken · **错误文本：** 165 条 · **构建：** 单文件、离线可用
+
+## 链接
+
+- 在线体验：<https://mc-cya2014.github.io/QR-FAULT/>
+- 项目仓库：<https://github.com/MC-CYA2014/QR-FAULT/>
 
 ---
 
 ## 快速开始
 
-无需安装依赖，直接用浏览器打开：index.html文件
+### 在线体验
+
+直接打开：<https://mc-cya2014.github.io/QR-FAULT/>
+
+### 本地运行
+
+无需安装依赖，直接用浏览器打开 `index.html`。
 
 ```text
 index.html
@@ -21,9 +32,6 @@ Windows 也可以：
 ```powershell
 start .\index.html
 ```
-
-或者打开
-[在线预览](https://mc-cya2014.github.io/QR-FAULT/)
 
 页面完全离线运行，不会发起网络请求。
 
@@ -43,7 +51,7 @@ start .\index.html
 
 ### 165 条错误文本
 
-错误池按 10 个类别组织，每类 16~18 条，共 **165 条互不重复**的文本：
+错误池按 10 个类别组织，每类 16～18 条，共 **165 条互不重复**的文本：
 
 | 类别 | 数量 | 示例 |
 | --- | ---: | --- |
@@ -69,10 +77,13 @@ start .\index.html
 - Canvas 内部尺寸 1024 × 1024，下载清晰。
 - 页面上的二维码和下载的 PNG 都经过回读验证。
 
-### 失败日志
+### 失败日志与滚动
 
-- 记录最近 **160 次**失败。
+- 记录最近 **165 次**失败。
 - 日志区域固定最大高度，支持鼠标滚轮、触控板、手机滑动上下查看。
+- 鼠标位于日志框内时，滚轮只滚动日志，不带动整个页面。
+- 鼠标位于文本输入框内且内容溢出时，滚轮只滚动输入框。
+- 鼠标在输入框或日志框外时，滚轮正常滚动页面。
 - 新记录自动回到日志顶部。
 - 每条日志包含时间、错误类型、错误码、二维码实际内容和失败状态。
 
@@ -96,7 +107,7 @@ start .\index.html
    │
    └─ 内容不进入编码器
 
-错误文本池（160 条）
+错误文本池（165 条）
    │
    ├─ 避开最近 2 个类别
    ├─ 避开最近 24 条文本
@@ -115,13 +126,14 @@ start .\index.html
    1024 × 1024 Canvas → 页面展示 / PNG 下载
 ```
 
-关键实现位置都在 `qr-fail-generator.html`：
+关键实现位置都在 `index.html`：
 
-- `ERROR_TYPES`：10 个类别及每类 16 条错误文本。
+- `ERROR_TYPES`：10 个类别、共 165 条错误文本。
 - `chooseError()`：类别与文本的避重选择。
 - `drawQR()`：生成并绘制二维码。
 - `renderResult()`：更新结果面板与元数据。
 - `addHistory()`：写入并重绘失败日志。
+- `enableWheelScroll()`：让输入框和日志框在内部滚动时拦截页面滚轮。
 - `download()`：导出 PNG。
 
 ---
@@ -150,10 +162,10 @@ variants: [
 修改两处：
 
 ```js
-state.history = state.history.slice(0, 160);
+state.history = state.history.slice(0, 165);
 ```
 
-以及页面顶部的「最近 160 次」文案。
+以及页面顶部的「最近 165 次」文案。
 
 ### 调整日志滚动高度
 
@@ -168,19 +180,19 @@ state.history = state.history.slice(0, 160);
 
 ## 验证
 
-对全部 160 条错误文本逐一生成二维码，并使用 `jsQR` 回读：
+对全部 165 条错误文本逐一生成二维码，并使用 `jsQR` 回读：
 
 ```text
-TOTAL=160
-UNIQUE_TEXTS=160
-UNIQUE_PAYLOADS=160
+TOTAL=165
+UNIQUE_TEXTS=165
+UNIQUE_PAYLOADS=165
 MAX_MODULES=41
-PASS=160
+PASS=165
 FAIL=0
 ALL_PASS
 ```
 
-浏览器实测无控制台错误；滚轮在日志区域内可独立上下滚动，不会带动页面。
+浏览器实测无控制台错误；滚轮在日志/输入框区域内会优先滚动对应控件，不会带动页面。
 
 ---
 
@@ -188,8 +200,9 @@ ALL_PASS
 
 ```text
 .
-├── qr-fail-generator.html   # 单文件应用（样式、脚本、二维码库全部内联）
-└── README.md
+├── index.html   # 单文件应用（样式、脚本、二维码库全部内联）
+├── README.md
+└── LICENSE
 ```
 
 没有构建步骤，没有 npm 依赖，没有外部 CDN。
@@ -203,7 +216,9 @@ ALL_PASS
 - Canvas 2D
 - `TextEncoder`
 - `crypto.getRandomValues`
+- `WheelEvent`
 - CSS `scrollbar-width` / `::-webkit-scrollbar`
+- CSS `overscroll-behavior`
 
 ---
 
